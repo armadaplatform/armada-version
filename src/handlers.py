@@ -6,7 +6,7 @@ from distutils.version import StrictVersion
 from armada import hermes
 from tornado.ioloop import IOLoop
 from tornado.web import RequestHandler
-from tornado.escape import json_encode, json_decode
+from tornado.escape import json_decode
 from tornado.httpclient import AsyncHTTPClient, HTTPError
 
 from utils import status
@@ -31,7 +31,7 @@ class VersionCheckHandler(RequestHandler):
             'latest_version': str(latest_version),
             'is_newer': latest_version > client_version
         }
-        self.write(json_encode(data))
+        self.write(data)
 
     async def _get_latest_version(self):
         try:
