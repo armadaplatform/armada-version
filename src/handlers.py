@@ -35,7 +35,7 @@ class VersionCheckHandler(RequestHandler):
 
     async def _get_latest_version(self):
         try:
-            response = await http_client.fetch('http://192.168.3.158:5001/v2/armada/tags/list')
+            response = await http_client.fetch('http://dockyard.armada.sh/v2/armada/tags/list')
         except HTTPError:
             logging.exception('There was a problem with connecting to external service.')
             raise HTTPError(code=500, message="Due to failure of third party services, "
