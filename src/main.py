@@ -11,7 +11,7 @@ def main():
     app = Application(
         (
             url('/', IndexHandler),
-            url('/version_check/', VersionCheckHandler),
+            url('/version_check', VersionCheckHandler),
         ),
         debug=debug
     )

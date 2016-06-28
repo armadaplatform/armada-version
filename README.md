@@ -4,7 +4,7 @@ Simple service for keeping armada’s clients up to date.
 ### usage
 sample request:
 
-    curl http://192.168.2.245:4999/version_check/?version=0.19.2
+    curl http://version.armada.sh/version_check?version=0.19.2
 
 sample response:
 
