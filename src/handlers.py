@@ -1,7 +1,6 @@
 import uuid
 import logging
 from urllib.parse import urlencode
-from distutils.version import StrictVersion
 
 from armada import hermes
 from tornado.ioloop import IOLoop
@@ -9,7 +8,7 @@ from tornado.web import RequestHandler
 from tornado.escape import json_decode
 from tornado.httpclient import AsyncHTTPClient, HTTPError
 
-from utils import status
+from utils import status, StrictVerboseVersion
 
 
 http_client = AsyncHTTPClient()
@@ -70,7 +69,7 @@ class VersionCheckHandler(RequestHandler):
     def _get_valid_versions(tags):
         for tag in tags:
             try:
-                yield StrictVersion(tag)
+                yield StrictVerboseVersion(tag)
             except ValueError:
                 pass
 
@@ -79,6 +78,6 @@ class VersionCheckHandler(RequestHandler):
         if not client_version:
             raise HTTPError(code=400, message='Missing argument version.')
         try:
-            return StrictVersion(client_version)
+            return StrictVerboseVersion(client_version)
         except ValueError:
             raise HTTPError(code=400, message='Invalid version number.')

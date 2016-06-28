@@ -1,5 +1,6 @@
-from time import time
 import os
+from time import time
+from distutils.version import StrictVersion
 
 start_time = time()
 
@@ -19,3 +20,11 @@ def status():
     if app_id:
         results['app_id'] = app_id
     return results
+
+
+class StrictVerboseVersion(StrictVersion):
+    def __str__(self):
+        vstring = '.'.join(map(str, self.version))
+        if self.prerelease:
+            vstring = vstring + self.prerelease[0] + str(self.prerelease[1])
+        return vstring
