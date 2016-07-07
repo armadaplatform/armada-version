@@ -3,16 +3,18 @@ import logging
 from urllib.parse import urlencode
 
 from armada import hermes
+from tornado.gen import Task
 from tornado.ioloop import IOLoop
-from tornado.web import RequestHandler
 from tornado.escape import json_decode
-from tornado.httpclient import AsyncHTTPClient, HTTPError
+from tornado.web import RequestHandler, HTTPError
+from tornado.httpclient import AsyncHTTPClient, HTTPError as HTTPClientError, HTTPRequest
 
 from utils import status, StrictVerboseVersion
 
 
 http_client = AsyncHTTPClient()
 config = hermes.get_config('config.json')
+logging.basicConfig(format='%(asctime)-15s %(message)s')
 
 
 class IndexHandler(RequestHandler):
@@ -32,22 +34,29 @@ class VersionCheckHandler(RequestHandler):
         }
         self.write(data)
 
+    @staticmethod
+    async def make_request(url, method='GET', body=None, timeout=None):
+        request = HTTPRequest(url, method, body=body, request_timeout=timeout)
+        response = await Task(http_client.fetch, request)
+        if response.error:
+            raise response.error
+        return response
+
     async def _get_latest_version(self):
         try:
-            response = await http_client.fetch('http://dockyard.armada.sh/v2/armada/tags/list')
-        except HTTPError:
+            response = await self.make_request('http://dockyard.armada.sh/v2/armada/tags/list', timeout=3)
+        except HTTPClientError:
             logging.exception('There was a problem with connecting to external service.')
-            raise HTTPError(code=500, message="Due to failure of third party services, "
-                                              "we weren't able to handle your request.")
+            raise HTTPError(500, reason="Due to failure of third party services, "
+                                        "we weren't able to handle your request.")
         tags = json_decode(response.body)['tags']
         try:
             return max(self._get_valid_versions(tags))
         except ValueError:
             logging.error("Couldn't find any valid version number in armada's dockyard.")
-            raise HTTPError(code=500, message="We could't find any valid version candidate.")
+            raise HTTPError(500, reason="We could't find any valid version candidate.")
 
-    @staticmethod
-    async def _collect_data(client_version, ip_address):
+    async def _collect_data(self, client_version, ip_address):
         data = {
             'v': 1,
             't': 'screenview',
@@ -61,8 +70,8 @@ class VersionCheckHandler(RequestHandler):
 
         body = urlencode(data)
         try:
-            await http_client.fetch('https://www.google-analytics.com/collect', method='POST', body=body)
-        except HTTPError:
+            await self.make_request('https://www.google-analytics.com/collect', method='POST', body=body, timeout=5)
+        except HTTPClientError:
             logging.exception('An error occurred while trying to send Google Analytics.')
 
     @staticmethod
@@ -76,8 +85,8 @@ class VersionCheckHandler(RequestHandler):
     def _validate_client_version(self):
         client_version = self.get_argument('version')
         if not client_version:
-            raise HTTPError(code=400, message='Missing argument version.')
+            raise HTTPError(400, reason='Missing argument version.')
         try:
             return StrictVerboseVersion(client_version)
         except ValueError:
-            raise HTTPError(code=400, message='Invalid version number.')
+            raise HTTPError(400, reason='Invalid version number.')
