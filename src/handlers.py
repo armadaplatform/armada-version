@@ -1,6 +1,7 @@
 import uuid
 import logging
 from urllib.parse import urlencode
+import sys
 
 from armada import hermes
 from tornado.gen import Task
@@ -25,6 +26,8 @@ class IndexHandler(RequestHandler):
 class VersionCheckHandler(RequestHandler):
     async def get(self):
         client_version = self._validate_client_version()
+        print("X-Forwarded-For: {}, client_version: {}".format(self.request.headers.get('X-Forwarded-For', ''), client_version),
+            file=sys.stderr)
         # send version to GA, fire and forget
         IOLoop.current().spawn_callback(self._collect_data, client_version, self.request.remote_ip)
         latest_version = await self._get_latest_version()
